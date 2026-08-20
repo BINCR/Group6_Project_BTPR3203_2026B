@@ -147,7 +147,7 @@ def main():
     base_dir = Path(__file__).resolve().parent
 
     input_file = base_dir / "youtube_comments_raw.csv"
-    output_file = base_dir / "youtube_comments_cleaned.csv"
+    output_file = base_dir / "youtube_comments_with_sentiment.csv"
 
     print("Python file location:")
     print(base_dir)
