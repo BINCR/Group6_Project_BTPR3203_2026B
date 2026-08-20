@@ -33,11 +33,11 @@ The project addresses three research questions:
 ```
 Group6_Project_BTPR3203_2026B/
 ├── Figure/                             # All generated visualisations (Figures 1-6 & Graphs 3.1-3.3)
-├── youtube_comments_with_sentiment.csv # Unified primary dataset with sentiment labels
+├── youtube_comments_with_sentiment.csv # Final unified dataset with sentiment labels (input to analysis.ipynb)
 ├── rq1_summary.csv                     # Statistical summary output for RQ1
 ├── rq2_summary.csv                     # Statistical summary output for RQ2
 ├── rq3_final_ml_predictions.csv        # Machine learning prediction output for RQ3
-├── youtube_scrape.py                   # Script to scrape YouTube comments
+├── youtube_scrape.py                   # Script to scrape raw YouTube comments
 ├── data_cleaning.py                    # Script for data preprocessing and feature engineering
 ├── analysis.ipynb                      # Main notebook: EDA, statistics, and machine learning
 ├── requirements.txt                    # Python package dependencies
@@ -83,36 +83,55 @@ venv\Scripts\activate         # Windows
 pip install -r requirements.txt
 ```
 
-If `requirements.txt` is not yet present in the repository, install the core packages directly:
+`requirements.txt` should contain at minimum:
 
-```bash
-pip install pandas numpy scikit-learn matplotlib seaborn textblob jupyter
-python -m textblob.download_corpora
+```
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+textblob
+youtube-comment-downloader
+jupyter
 ```
 
-> Add/adjust this list to match whichever scraping library `youtube_scrape.py` actually imports (e.g. `google-api-python-client`, `selenium`, or `youtube-comment-downloader`), and pin exact versions with `pip freeze > requirements.txt` once the environment is finalised.
+After installing, download the TextBlob corpora once:
+
+```bash
+python -m textblob.download_corpora
+```
 
 ---
 
 ## How to Run
 
-The pipeline is designed to be run in three stages, in order:
+The pipeline runs in three stages, in order.
 
-### Stage 1 — Scrape the data
+### Stage 1 — Scrape the raw data
 
 ```bash
 python youtube_scrape.py
 ```
 
-This collects raw comments from the target YouTube video and saves them as a CSV file.
+Collects raw comments from the target YouTube video and saves them as `youtube_comments_raw.csv` (fields: `comment_id`, `comment`, `author`, `like_count`, `time_text`, `reply`).
 
-### Stage 2 — Clean and engineer features
+### Stage 2 — Clean, engineer features, and label sentiment
 
 ```bash
 python data_cleaning.py
 ```
 
-This handles missing values, converts data types, removes noise (links, line breaks, duplicate spaces) from comment text, and generates the engineered fields (`word_count`, `character_count`, `comment_type`, `sentiment`). The output is `youtube_comments_with_sentiment.csv`.
+This script:
+- loads `youtube_comments_raw.csv`,
+- removes hyperlinks, line breaks, and duplicate whitespace from comment text (`clean_comment`),
+- converts the raw `like_count` string (e.g. `"2.7K"`) into a numeric field (`like_count_numeric`),
+- derives `word_count`, `character_count`, and `comment_type` (Top-level / Reply),
+- drops empty comments and duplicate `comment_id` rows,
+- assigns a `sentiment` label (Positive / Negative / Neutral) to each comment using TextBlob's lexicon-based polarity score,
+- saves the final dataset as `youtube_comments_with_sentiment.csv`.
+
+> **Note:** the version of `data_cleaning.py` currently committed to this repository performs cleaning and feature engineering but does **not yet include the TextBlob sentiment-labelling step**, and it writes its output to `youtube_comments_cleaned.csv` rather than `youtube_comments_with_sentiment.csv`. The `youtube_comments_with_sentiment.csv` file included in this repo was produced with an additional sentiment-labelling step that still needs to be merged into `data_cleaning.py` so the full pipeline can be reproduced end-to-end from a single script. This is a known limitation — see "Known Issues" below.
 
 ### Stage 3 — Run the analysis
 
@@ -127,6 +146,13 @@ Run all cells in order (**Kernel → Restart & Run All**). The notebook performs
 - Group comparison and Welch's t-test for RQ2
 - TF-IDF vectorisation and Logistic Regression sentiment classification for RQ3
 - Generation of all visualisations (saved to `Figure/`) and summary outputs (`rq1_summary.csv`, `rq2_summary.csv`, `rq3_final_ml_predictions.csv`)
+
+> **Note:** the first code cell of the notebook must define the output folder before the RQ1 cell runs, e.g.:
+> ```python
+> figure_dir = Path("Figure")
+> figure_dir.mkdir(exist_ok=True)
+> ```
+> The currently committed notebook only defines `charts_dir` in this cell, not `figure_dir`, which the RQ1/RQ2/RQ3 cells rely on to save images. Running "Restart & Run All" on the current version will raise `NameError: name 'figure_dir' is not defined` on the RQ1 cell. Add the two lines above to the first code cell before submission/demo to make the notebook fully reproducible from a clean environment.
 
 ---
 
@@ -144,12 +170,22 @@ Run all cells in order (**Kernel → Restart & Run All**). The notebook performs
 
 ### Methodology Summary
 
-- **Data cleaning:** removal of hyperlinks, line breaks, and duplicate whitespace; conversion of like counts to numeric type.
+- **Data cleaning:** removal of hyperlinks, line breaks, and duplicate whitespace; conversion of like counts to numeric type; removal of empty/duplicate comments.
 - **Feature engineering:** `word_count`, `character_count`, `comment_type` (top-level vs. reply), and `sentiment` (TextBlob lexicon-based labelling).
 - **Statistical analysis:** Pearson/Spearman correlation, IQR-based outlier removal, Welch's independent t-test.
 - **Machine learning:** TF-IDF vectorisation (1,000 features, English stop words removed) → Logistic Regression classifier, evaluated against a Multinomial Naive Bayes baseline (Accuracy: 63.81% vs. 60.95%), using an 80/20 stratified train-test split (`random_state=42`).
 
 Full methodology, findings, and interpretation are available in the project report.
+
+---
+
+### Known Issues
+
+These are documented transparently for grading/reproducibility purposes and are being addressed before final submission:
+
+1. `data_cleaning.py` does not yet include the TextBlob sentiment-labelling step and writes to a differently-named output file than the one consumed by `analysis.ipynb`. The two need to be reconciled into a single reproducible script.
+2. `analysis.ipynb` requires a `figure_dir` variable to be defined in the first code cell (see "How to Run", Stage 3) — without it, "Restart & Run All" fails on the RQ1 cell.
+3. `requirements.txt` should be generated with `pip freeze > requirements.txt` once the environment used to produce the final results is finalised, to guarantee identical package versions.
 
 ---
 
