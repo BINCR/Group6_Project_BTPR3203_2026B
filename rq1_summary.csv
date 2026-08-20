@@ -1,0 +1,17 @@
+﻿Metric,Value
+Total records analysed,1572.0
+Mean word count,21.112595419847327
+Median word count,12.0
+Maximum word count,1018.0
+Mean like count,7.815521628498728
+Median like count,0.0
+Maximum like count,2700.0
+Zero-like comments,1086.0
+Zero-like percentage,69.08396946564885
+Pearson correlation,-0.012215838208451206
+Spearman correlation,0.08341623749599088
+Word count outliers,138.0
+Like count outliers,228.0
+Filtered records,1228.0
+Filtered Pearson correlation,0.05336703112418599
+Filtered Spearman correlation,0.0793107587170433
